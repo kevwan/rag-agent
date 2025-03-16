@@ -40,8 +40,8 @@ This system consists of two main components:
 Download the latest Milvus docker-compose.yml file using wget:
 
 ```bash
-mkdir -p milvus-data
-cd milvus-data
+mkdir -p data
+cd data
 wget https://github.com/milvus-io/milvus/releases/download/v2.5.6/milvus-standalone-docker-compose.yml -O docker-compose.yml
 ```
 
@@ -175,7 +175,7 @@ python ragagent.py --provider openai --embedding-model text-embedding-3-small --
 - **Changing Models**: Ensure consistent embedding dimensions or recreate the collection
 - **Updating Milvus**: To update to the latest Milvus version:
   ```bash
-  cd milvus-data
+  cd data
   docker-compose down
   wget https://github.com/milvus-io/milvus/releases/latest/download/milvus-standalone-docker-compose.yml -O docker-compose.yml
   docker-compose up -d
