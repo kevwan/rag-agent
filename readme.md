@@ -1,6 +1,23 @@
-# Markdown RAG System
+# Markdown Knowledge RAG
 
-A Retrieval Augmented Generation (RAG) system for searching and querying Markdown documents using vector embeddings. The system uses Milvus for vector storage and supports both local Ollama and OpenAI for embeddings and text generation.
+Markdown Knowledge RAG transforms your Markdown files into a searchable knowledge base using vector embeddings. Ask questions in natural language and get accurate answers based on your documentation content. The system combines Milvus for vector storage with your choice of Ollama's local LLMs or OpenAI's models for embeddings and text generation.
+
+## ✨ Features
+
+- **Markdown Indexing**: Recursively processes Markdown files, with directory exclusion options
+- **Flexible AI Backend**: Use local Ollama models or OpenAI's API
+- **Vector Search**: Leverages Milvus for fast similarity search
+- **Self-contained Setup**: Simple Docker-based deployment
+- **Automatic Fallback**: Gracefully falls back to local models if OpenAI isn't available
+- **Command-line Interface**: Easy-to-use CLI for both indexing and querying
+
+## 🛠️ Tech Stack
+
+- **Vector Database**: Milvus
+- **Embedding Models**: Ollama (DeepSeek) or OpenAI
+- **Text Generation**: Ollama (DeepSeek) or OpenAI (GPT-3.5/4o)
+- **Storage**: Docker volumes for persistence
+- **Language**: Python 3.8+
 
 ## System Overview
 
