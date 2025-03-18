@@ -5,9 +5,14 @@ Markdown Vectorizer
 This script processes Markdown files into a Milvus vector database for semantic search.
 It extracts text from Markdown files, generates embeddings using Ollama with DeepSeek model,
 and stores them in a Milvus collection for later retrieval.
+
+Usage:
+    python improved_markdown_vectorizer.py --dir /path/to/markdown/files --skip node_modules .git dist
 """
 
 import os
+import argparse
+import sys
 from typing import List, Optional, Dict, Any
 
 import ollama
@@ -94,14 +99,21 @@ class MarkdownProcessor:
         if skip_folders is None:
             skip_folders = []
 
-        md_files = []
-        for root, dirs, files in os.walk(directory, topdown=True):
-            # Skip unwanted folders
-            dirs[:] = [d for d in dirs if d not in skip_folders]
+        if not os.path.isdir(directory):
+            print(f"❌ Error: {directory} is not a valid directory")
+            return []
 
-            for file in files:
-                if file.endswith(".md"):
-                    md_files.append(os.path.join(root, file))
+        md_files = []
+        try:
+            for root, dirs, files in os.walk(directory, topdown=True):
+                # Skip unwanted folders
+                dirs[:] = [d for d in dirs if d not in skip_folders]
+
+                for file in files:
+                    if file.endswith(".md"):
+                        md_files.append(os.path.join(root, file))
+        except Exception as e:
+            print(f"❌ Error scanning directory {directory}: {e}")
 
         print(f"📝 Found {len(md_files)} Markdown files in {directory}")
         return md_files
@@ -273,6 +285,10 @@ class MarkdownVectorizer:
         total_files = len(md_files)
         processed = 0
 
+        if total_files == 0:
+            print(f"⚠️ No Markdown files found in {directory}")
+            return
+
         # Process each file
         for md_file in md_files:
             try:
@@ -308,35 +324,105 @@ class MarkdownVectorizer:
         self.milvus_collection.load()
 
 
-def main():
-    """Main entry point for the script."""
-    # Initialize components
-    milvus_conn = MilvusConnection()
-    md_processor = MarkdownProcessor()
-    embedding_gen = EmbeddingGenerator()
-    milvus_coll = MilvusCollection()
+def parse_arguments() -> argparse.Namespace:
+    """
+    Parse command line arguments.
 
-    # Create vectorizer
-    vectorizer = MarkdownVectorizer(
-        milvus_connection=milvus_conn,
-        markdown_processor=md_processor,
-        embedding_generator=embedding_gen,
-        milvus_collection=milvus_coll
+    Returns:
+        Parsed command line arguments
+    """
+    parser = argparse.ArgumentParser(
+        description="Process Markdown files into Milvus vector database",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    # Process documents
-    doc_folder = os.path.expanduser("~/Develop/go/opensource/zeromicro/portal")
-    skip_folders = ["node_modules", ".git", "backup"]
+    parser.add_argument(
+        "--dir", "-d",
+        dest="markdown_dir",
+        required=True,
+        help="Directory containing Markdown files to process"
+    )
 
+    parser.add_argument(
+        "--skip", "-s",
+        nargs="+",
+        default=["node_modules", ".git", "backup"],
+        help="List of directories to skip during processing"
+    )
+
+    parser.add_argument(
+        "--host",
+        default="localhost",
+        help="Milvus server host"
+    )
+
+    parser.add_argument(
+        "--port",
+        default="19530",
+        help="Milvus server port"
+    )
+
+    parser.add_argument(
+        "--model",
+        default="deepseek-llm",
+        help="Ollama model name for embeddings"
+    )
+
+    return parser.parse_args()
+
+
+def main() -> int:
+    """
+    Main entry point for the script.
+
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    # Parse command line arguments
+    args = parse_arguments()
+
+    # Expand user directory if present (e.g., ~/documents)
+    markdown_dir = os.path.expanduser(args.markdown_dir)
+
+    # Validate directory
+    if not os.path.isdir(markdown_dir):
+        print(f"❌ Error: {markdown_dir} is not a valid directory")
+        return 1
+
+    # Initialize components
     try:
-        vectorizer.process_documents(doc_folder, skip_folders)
+        milvus_conn = MilvusConnection(host=args.host, port=args.port)
+        md_processor = MarkdownProcessor()
+        embedding_gen = EmbeddingGenerator(model=args.model)
+        milvus_coll = MilvusCollection()
+
+        # Create vectorizer
+        vectorizer = MarkdownVectorizer(
+            milvus_connection=milvus_conn,
+            markdown_processor=md_processor,
+            embedding_generator=embedding_gen,
+            milvus_collection=milvus_coll
+        )
+
+        # Process documents
+        print(f"🔍 Processing Markdown files from: {markdown_dir}")
+        print(f"🚫 Skipping directories: {args.skip}")
+
+        vectorizer.process_documents(markdown_dir, args.skip)
         vectorizer.create_search_index()
         print("✅ Vectorization complete!")
-    except Exception as e:
-        print(f"❌ Vectorization failed: {e}")
-    finally:
+
+        # Disconnect from Milvus
         milvus_conn.disconnect()
+        return 0
+
+    except KeyboardInterrupt:
+        print("\n⚠️ Process interrupted by user")
+        return 130
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
