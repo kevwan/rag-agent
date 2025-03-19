@@ -1,0 +1,10 @@
+[project]
+name = "rag-agent"
+version = "0.1.0"
+description = "A powerful Retrieval Augmented Generation system that turns your Markdown documentation into an interactive knowledge base using vector search and LLMs."
+readme = "readme.md"
+requires-python = ">=3.13"
+dependencies = [
+    "ollama>=0.4.7",
+    "pymilvus>=2.5.5",
+]
